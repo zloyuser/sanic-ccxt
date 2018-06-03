@@ -1,0 +1,6 @@
+ccxt
+sanic
+sanic_openapi3
+python-dotenv
+aiohttp
+Fabric3
