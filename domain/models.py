@@ -1,6 +1,10 @@
 import ccxt.async as ccxt
 
+from collections import defaultdict
+from typing import Dict
+from ccxt import RequestTimeout, OrderNotFound
 from ccxt.async.base.exchange import Exchange
+from domain.errors import *
 
 
 class Symbol:
@@ -13,6 +17,9 @@ class Symbol:
 
     def __str__(self):
         return '%s/%s' % (self.base, self.quote)
+
+    def __hash__(self):
+        return str(self)
 
 
 class ExchangeFeatures:
@@ -36,9 +43,11 @@ class ExchangeFeatures:
 
 class ExchangeProxy:
     exchange: Exchange
+    retries: {}
 
     def __init__(self, exchange: Exchange):
         self.exchange = exchange
+        self.retries = defaultdict(int)
 
     @staticmethod
     async def list():
@@ -51,6 +60,9 @@ class ExchangeProxy:
 
     @staticmethod
     def load(name: str, params: dict = None):
+        if not hasattr(ccxt, name):
+            raise InvalidExchange(name)
+
         return ExchangeProxy(getattr(ccxt, name)(params or {}))
 
     def features(self) -> dict:
@@ -76,7 +88,10 @@ class ExchangeProxy:
     async def market(self, symbol: Symbol):
         await self.markets()
 
-        return self.exchange.markets[str(symbol)]
+        if symbol not in self.exchange.markets:
+            raise InvalidSymbol(symbol)
+
+        return self.exchange.markets[symbol]
 
     async def ticker(self, symbol: Symbol):
         self._guard("fetchTicker")
@@ -105,17 +120,87 @@ class ExchangeProxy:
 
         return await self.exchange.fetch_trades(str(symbol), since, limit)
 
-    async def balance(self):
+    async def wallet(self):
         self._guard("fetchBalance")
 
-        return await self.exchange.fetch_balance()
+        balances = await self.exchange.fetch_balance()
+
+        return Wallet(balances['free'], balances['used'], balances['total'])
+
+    async def balance(self, base: str):
+        self._guard("fetchBalance")
+
+        currency = base.upper()
+        balances = await self.exchange.fetch_balance()
+
+        return Balance(balances[currency] if currency in balances else {})
+
+    async def get_orders(self, symbol: Symbol, status: str = None, since: int = None, limit: int = None):
+        since = int(since) if since else None
+        limit = int(limit) if limit else None
+
+        if status == 'open':
+            self._guard("fetchOpenOrders")
+
+            return await self.exchange.fetch_open_orders(str(symbol), since, limit)
+        elif status == 'closed':
+            self._guard("fetchClosedOrders")
+
+            return await self.exchange.fetch_closed_orders(str(symbol), since, limit)
+        else:
+            self._guard("fetchOrders")
+
+            return await self.exchange.fetch_orders(str(symbol), since, limit)
+
+    async def get_order(self, symbol: Symbol, _id: str):
+        self._guard("fetchOrder")
+
+        await self.exchange.fetch_order(_id, str(symbol))
+
+    async def create_order(self, symbol: Symbol, type: str, side: str, amount: float, price: float = None):
+        self._guard("createOrder")
+
+        try:
+            order = await self.exchange.create_order(str(symbol), type, side, amount, price)
+
+            return order
+        except RequestTimeout:
+            # TODO !!!
+            if 'fetchOpenOrders' in self.exchange.has:
+                orders = await self.exchange.fetch_open_orders(str(symbol))
+
+    async def cancel_order(self, symbol: Symbol, _id: str):
+        self._guard("cancelOrder")
+
+        try:
+            await self.exchange.cancel_order(_id, str(symbol))
+        except OrderNotFound as error:
+            if self.retries[_id] > 0:
+                # Update Order Cache
+                if 'fetchOrder' in self.exchange.has:
+                    await self.exchange.fetch_order(_id, str(symbol))
+
+                self.retries[_id] = 0
+
+                return
+
+            raise error
+        except RequestTimeout as error:
+            self.retries[_id] += 1
+
+            if self.retries[_id] > 5:
+                self.retries[_id] = 0
+
+                raise error
+            else:
+                self.cancel_order(symbol, _id)
 
     async def close(self):
         return await self.exchange.close()
 
     def _guard(self, ability: str):
         if not self.exchange.has[ability]:
-            raise NotImplemented(ability)
+            raise InvalidOperation(ability)
 
 
 class Limit:
@@ -192,11 +277,44 @@ class OrderItem:
     amount = float
 
 
+class OrderFee:
+    currency: str
+    cost: float
+    rate: float
+
+
 class Order:
-    bids = [OrderItem]
-    asks = [OrderItem]
-    timestamp = int
+    id: str
+    timestamp: int
+    last_trade: int
+    status: str
+    symbol: str
+    type: str
+    side: str
+    price: float
+    amount: float
+    filled: float
+    remaining: float
+    cost: float
+    fee: OrderFee
+
+
+class Wallet:
+    free: Dict[str, float]
+    used: Dict[str, float]
+    total: Dict[str, float]
+
+    def __init__(self, free: Dict, used: Dict, total: Dict):
+        self.free = free
+        self.used = used
+        self.total = total
 
 
 class Balance:
-    pass
+    free: float
+    used: float
+    total: float
+
+    def __init__(self, values: Dict):
+        for k, v in values.items():
+            setattr(self, k, v or 0)

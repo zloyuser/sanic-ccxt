@@ -24,7 +24,7 @@ app = Sanic(__name__)
 app.config.from_object(Settings())
 
 # Install extentions
-# app.blueprint(ext_exceptions)
+app.blueprint(ext_exceptions)
 # app.blueprint(ext_middlewares)
 
 # Install apps

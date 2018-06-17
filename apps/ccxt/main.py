@@ -36,11 +36,13 @@ async def exchanges_list(request):
 @openapi.response(200, [str])
 async def exchange_symbols(request, name):
     exchange = ExchangeProxy.load(name)
-    symbols = await exchange.symbols()
 
-    await exchange.close()
+    try:
+        symbols = await exchange.symbols()
 
-    return json(symbols)
+        return json(symbols)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/currencies")
@@ -49,11 +51,13 @@ async def exchange_symbols(request, name):
 @openapi.response(200, [Currency])
 async def exchange_currencies(request, name):
     exchange = ExchangeProxy.load(name)
-    currencies = await exchange.currencies()
 
-    await exchange.close()
+    try:
+        currencies = await exchange.currencies()
 
-    return json(currencies)
+        return json(currencies)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/markets")
@@ -62,11 +66,13 @@ async def exchange_currencies(request, name):
 @openapi.response(200, [Market])
 async def exchange_markets(request, name):
     exchange = ExchangeProxy.load(name)
-    markets = await exchange.markets()
 
-    await exchange.close()
+    try:
+        markets = await exchange.markets()
 
-    return json(markets)
+        return json(markets)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/markets/<base:[A-z]+>/<quote:[A-z]+>")
@@ -75,11 +81,13 @@ async def exchange_markets(request, name):
 @openapi.response(200, Market)
 async def exchange_market(request, name, base, quote):
     exchange = ExchangeProxy.load(name)
-    market = await exchange.market(Symbol(base, quote))
 
-    await exchange.close()
+    try:
+        market = await exchange.market(Symbol(base, quote))
 
-    return json(market)
+        return json(market)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/tickers/<base:[A-z]+>/<quote:[A-z]+>")
@@ -88,11 +96,13 @@ async def exchange_market(request, name, base, quote):
 @openapi.response(200, Ticker)
 async def exchange_ticker(request, name, base, quote):
     exchange = ExchangeProxy.load(name)
-    tick = await exchange.ticker(Symbol(base, quote))
 
-    await exchange.close()
+    try:
+        ticker = await exchange.ticker(Symbol(base, quote))
 
-    return json(tick)
+        return json(ticker)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/ohlcv/<base:[A-z]+>/<quote:[A-z]+>")
@@ -108,11 +118,13 @@ async def exchange_ohlcv(request, name, base, quote):
     limit = request.args.get("limit", None)
 
     exchange = ExchangeProxy.load(name)
-    ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe, since, limit)
 
-    await exchange.close()
+    try:
+        ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe, since, limit)
 
-    return json(ohlcv)
+        return json(ohlcv)
+    finally:
+        await exchange.close()
 
 
 @blueprint.get("/<name:[A-z]+>/trades/<base:[A-z]+>/<quote:[A-z]+>")
@@ -126,81 +138,114 @@ async def exchange_trades(request, name, base, quote):
     limit = request.args.get("limit", None)
 
     exchange = ExchangeProxy.load(name)
-    trades = await exchange.trades(Symbol(base, quote), since, limit)
 
-    await exchange.close()
+    try:
+        trades = await exchange.trades(Symbol(base, quote), since, limit)
 
-    return json(trades)
+        return json(trades)
+    finally:
+        await exchange.close()
 
 
-@blueprint.get("/<name:[A-z]+>/balance")
+@blueprint.get("/<name:[A-z]+>/wallet/")
+@openapi.tag("account")
+@openapi.summary("Fetches authorized account balances")
+@openapi.response(200, [Wallet])
+async def exchange_wallet(request, name):
+    exchange = ExchangeProxy.load(name, ccxt_headers(request))
+
+    try:
+        wallet = await exchange.wallet()
+
+        return json(wallet)
+    finally:
+        await exchange.close()
+
+
+@blueprint.get("/<name:[A-z]+>/wallet/<base:[A-z]+>")
 @openapi.tag("account")
 @openapi.summary("Fetches authorized account balance")
 @openapi.response(200, [Balance])
-async def exchange_balance(request, name):
+async def exchange_wallet(request, name, base):
     exchange = ExchangeProxy.load(name, ccxt_headers(request))
-    balance = await exchange.balance()
 
-    await exchange.close()
+    try:
+        balance = await exchange.balance(base)
 
-    return json(balance)
+        return json(balance)
+    finally:
+        await exchange.close()
 
 
-# @blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
-# @openapi.summary("Fetch L2/L3 order book for a particular market trading symbol.")
-# @openapi.tag("orders")
-# @openapi.parameter("limit", int)
-# @openapi.response(200, [Order])
-# async def exchange_orders(request, name, base, quote):
-#     exchange = get_exchange(name)
-#
-#     if not exchange.has["fetchOrderBook"]:
-#         return json(NotImplemented)
-#
-#     limit = request.args.get("limit", None)
-#
-#     orders = await exchange.fetch_order_book(symbol(base, quote), limit)
-#
-#     await exchange.close()
-#
-#     return json(orders)
-#
-#
-# @blueprint.post("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
-# @openapi.summary("Place order to exchange with given data.")
-# @openapi.tag("orders")
-# @openapi.response(201, desc="Order created")
-# async def orders_place(request, name, base, quote):
-#     exchange = get_exchange(name)
-#
-#     if not exchange.has["createOrder"]:
-#         return json(NotImplemented)
-#
-#     payload = request.json()
-#
-#     _type = payload["type"] if "type" in payload else "market"
-#     _side = payload["side"] if "side" in payload else "sell"
-#     _amount = float(payload["amount"])
-#     _price = float(payload["price"]) if _type == "limit" else None
-#
-#     await exchange.create_order(symbol(base, quote), _type, _side, _amount, _price)
-#     await exchange.close()
-#
-#     return json(None, 201)
-#
-#
-# @blueprint.delete("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>/<id>")
-# @openapi.summary("Cancel with specified ID.")
-# @openapi.tag("orders")
-# @openapi.response(204, desc="Order removed")
-# @openapi.response(404, desc="Order not found")
-# async def orders_cancel(request, name, base, quote, id):
-#     exchange = get_exchange(name)
-#
-#     if not exchange.has["cancelOrder"]:
-#         return json(NotImplemented)
-#
-#     await exchange.cancel_order(id, symbol(base, quote))
-#     await exchange.close()
-#
-#     return json(None, 204)
+@blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Fetch L2/L3 order book for a particular market trading symbol.")
+@openapi.tag("orders")
+@openapi.parameter("limit", int)
+@openapi.response(200, [Order])
+async def orders_list(request, name, base, quote):
+    exchange = ExchangeProxy.load(name, ccxt_headers(request))
+
+    since = request.args.get("since", None)
+    limit = request.args.get("limit", None)
+    status = request.args.get("status", None)
+
+    try:
+        orders = await exchange.get_orders(Symbol(base, quote), status, since, limit)
+
+        return json(orders)
+    finally:
+        await exchange.close()
+
+
+@blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>/<id>")
+@openapi.summary("Get with specified ID.")
+@openapi.tag("orders")
+@openapi.response(200, desc="Order object")
+@openapi.response(404, desc="Order not found")
+async def orders_get(request, name, base, quote, id):
+    exchange = ExchangeProxy.load(name, ccxt_headers(request))
+
+    try:
+        order = await exchange.get_order(Symbol(base, quote), id)
+
+        return json(order)
+    finally:
+        await exchange.close()
+
+
+@blueprint.post("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Place order to exchange with given data.")
+@openapi.tag("orders")
+@openapi.response(201, desc="Order created")
+async def orders_place(request, name, base, quote):
+    exchange = ExchangeProxy.load(name, ccxt_headers(request))
+
+    payload = request.json()
+
+    _type = payload["type"] if "type" in payload else "market"
+    _side = payload["side"] if "side" in payload else "sell"
+    _amount = float(payload["amount"])
+    _price = float(payload["price"]) if _type == "limit" else None
+
+    try:
+        order = await exchange.create_order(Symbol(base, quote), _type, _side, _amount, _price)
+
+        return json(order, 201)
+    finally:
+        await exchange.close()
+
+
+@blueprint.delete("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>/<id>")
+@openapi.summary("Cancel with specified ID.")
+@openapi.tag("orders")
+@openapi.response(204, desc="Order removed")
+@openapi.response(404, desc="Order not found")
+async def orders_cancel(request, name, base, quote, id):
+    exchange = ExchangeProxy.load(name, ccxt_headers(request))
+
+    try:
+        await exchange.cancel_order(Symbol(base, quote), id)
+
+        return json(None, 204)
+    finally:
+        await exchange.close()
