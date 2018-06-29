@@ -1,5 +1,6 @@
 import ccxt.async as ccxt
 
+from datetime import datetime
 from collections import defaultdict
 from typing import Dict
 from ccxt import RequestTimeout, OrderNotFound
@@ -160,14 +161,22 @@ class ExchangeProxy:
     async def create_order(self, symbol: Symbol, type: str, side: str, amount: float, price: float = None):
         self._guard("createOrder")
 
+        time = int(datetime.utcnow().timestamp())
+
         try:
             order = await self.exchange.create_order(str(symbol), type, side, amount, price)
 
             return order
-        except RequestTimeout:
+        except RequestTimeout as error:
             # TODO !!!
             if 'fetchOpenOrders' in self.exchange.has:
-                orders = await self.exchange.fetch_open_orders(str(symbol))
+                orders = await self.exchange.fetch_open_orders(str(symbol), time)
+
+                for order in orders:
+                    if order.side == side and order.type == type and order.amount == amount:
+                        return order
+
+            raise error
 
     async def cancel_order(self, symbol: Symbol, _id: str):
         self._guard("cancelOrder")

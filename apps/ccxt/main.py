@@ -198,7 +198,7 @@ async def orders_list(request, name, base, quote):
 
 
 @blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>/<id>")
-@openapi.summary("Get with specified ID.")
+@openapi.summary("Get order with specified ID.")
 @openapi.tag("orders")
 @openapi.response(200, desc="Order object")
 @openapi.response(404, desc="Order not found")

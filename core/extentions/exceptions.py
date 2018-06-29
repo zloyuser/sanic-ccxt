@@ -44,7 +44,7 @@ def handle_exchange_error(request, exception):
 def handle_not_found(request, exception):
     return json(jsonapi.error(exception, 'Resource not found'), status=HTTPStatus.NOT_FOUND)
 
-#
-# @blueprint.exception(Exception)
-# def handle_exception(request, exception):
-#     return json(jsonapi.error(exception, 'Unexpected Behavior'), status=HTTPStatus.BAD_REQUEST)
+
+@blueprint.exception(Exception)
+def handle_exception(request, exception):
+    return json(jsonapi.error(exception, 'Unexpected Behavior'), status=HTTPStatus.BAD_REQUEST)
