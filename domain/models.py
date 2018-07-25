@@ -1,10 +1,10 @@
-import ccxt.async as ccxt
+import ccxt.async_support as ccxt
 
 from datetime import datetime
 from collections import defaultdict
 from typing import Dict
 from ccxt import RequestTimeout, OrderNotFound
-from ccxt.async.base.exchange import Exchange
+from ccxt.async_support.base.exchange import Exchange
 from domain.errors import *
 
 
