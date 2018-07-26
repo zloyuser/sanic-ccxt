@@ -43,10 +43,12 @@ class ExchangeFeatures:
 
 
 class ExchangeProxy:
+    name: str
     exchange: Exchange
     retries: {}
 
-    def __init__(self, exchange: Exchange):
+    def __init__(self, name: str, exchange: Exchange):
+        self.name = name
         self.exchange = exchange
         self.retries = defaultdict(int)
 
@@ -64,7 +66,10 @@ class ExchangeProxy:
         if not hasattr(ccxt, name):
             raise InvalidExchange(name)
 
-        return ExchangeProxy(getattr(ccxt, name)(params or {}))
+        params = params or {}
+        params['timeout'] = 30000
+
+        return ExchangeProxy(name, getattr(ccxt, name)(params))
 
     def features(self) -> dict:
         return self.exchange.has
@@ -89,6 +94,8 @@ class ExchangeProxy:
     async def market(self, symbol: Symbol):
         await self.markets()
 
+        symbol = self._coerce_symbol(symbol)
+
         if symbol not in self.exchange.markets:
             raise InvalidSymbol(symbol)
 
@@ -97,14 +104,20 @@ class ExchangeProxy:
     async def ticker(self, symbol: Symbol):
         self._guard("fetchTicker")
 
+        symbol = self._coerce_symbol(symbol)
+
         return await self.exchange.fetch_ticker(str(symbol))
 
-    async def ohlcv(self, symbol: Symbol, timeframe: str = None, since: int = None, limit: int = None):
+    async def ohlcv(self, symbol: Symbol, timeframe: str = '1m', since: int = None, limit: int = None):
         self._guard("fetchOHLCV")
 
-        timeframes = self.exchange.timeframes if hasattr(self.exchange, 'timeframes') else {}
-        if timeframe not in timeframes:
-            timeframe = list(self.exchange.timeframes.keys())[0]
+        symbol = self._coerce_symbol(symbol)
+
+        if not hasattr(self.exchange, 'timeframes'):
+            timeframe = '1m'
+        else:
+            if timeframe not in self.exchange.timeframes:
+                timeframe = list(self.exchange.timeframes.keys())[0]
 
         since = int(since) if since else None
         limit = int(limit) if limit else None
@@ -115,6 +128,8 @@ class ExchangeProxy:
 
     async def trades(self, symbol: Symbol, since: int = None, limit: int = None):
         self._guard("fetchTrades")
+
+        symbol = self._coerce_symbol(symbol)
 
         since = int(since) if since else None
         limit = int(limit) if limit else None
@@ -140,6 +155,8 @@ class ExchangeProxy:
         since = int(since) if since else None
         limit = int(limit) if limit else None
 
+        symbol = self._coerce_symbol(symbol)
+
         if status == 'open':
             self._guard("fetchOpenOrders")
 
@@ -156,10 +173,14 @@ class ExchangeProxy:
     async def get_order(self, symbol: Symbol, _id: str):
         self._guard("fetchOrder")
 
+        symbol = self._coerce_symbol(symbol)
+
         await self.exchange.fetch_order(_id, str(symbol))
 
     async def create_order(self, symbol: Symbol, type: str, side: str, amount: float, price: float = None):
         self._guard("createOrder")
+
+        symbol = self._coerce_symbol(symbol)
 
         time = int(datetime.utcnow().timestamp())
 
@@ -180,6 +201,8 @@ class ExchangeProxy:
 
     async def cancel_order(self, symbol: Symbol, _id: str):
         self._guard("cancelOrder")
+
+        symbol = self._coerce_symbol(symbol)
 
         try:
             await self.exchange.cancel_order(_id, str(symbol))
@@ -210,6 +233,12 @@ class ExchangeProxy:
     def _guard(self, ability: str):
         if not self.exchange.has[ability]:
             raise InvalidOperation(ability)
+
+    def _coerce_symbol(self, symbol: Symbol):
+        # if self.name == 'poloniex' or self.name == 'bittrex':
+        #     return Symbol(symbol.quote, symbol.base)
+
+        return symbol
 
 
 class Limit:
