@@ -220,7 +220,7 @@ async def orders_get(request, name, base, quote, id):
 async def orders_place(request, name, base, quote):
     exchange = ExchangeProxy.load(name, ccxt_headers(request))
 
-    payload = request.json()
+    payload = request.json
 
     _type = payload["type"] if "type" in payload else "market"
     _side = payload["side"] if "side" in payload else "sell"
