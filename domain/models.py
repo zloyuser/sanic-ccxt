@@ -175,7 +175,7 @@ class ExchangeProxy:
 
         symbol = self._coerce_symbol(symbol)
 
-        await self.exchange.fetch_order(_id, str(symbol))
+        return await self.exchange.fetch_order(_id, str(symbol))
 
     async def create_order(self, symbol: Symbol, type: str, side: str, amount: float, price: float = None):
         self._guard("createOrder")
