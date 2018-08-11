@@ -26,12 +26,12 @@ def handle_invalid_operation(request, exception):
 
 
 @blueprint.exception(OrderNotFound)
-def handle_exchange_error(request, exception):
+def handle_order_not_found(request, exception):
     return json(jsonapi.error(exception, 'Order Not Found'), status=HTTPStatus.NOT_FOUND)
 
 
 @blueprint.exception(InvalidOrder)
-def handle_exchange_error(request, exception):
+def handle_invalid_order(request, exception):
     return json(jsonapi.error(exception, 'Invalid Order'), status=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
@@ -41,7 +41,7 @@ def handle_exchange_error(request, exception):
 
 
 @blueprint.exception(NotFound)
-def handle_not_found(request, exception):
+def handle_resource_not_found(request, exception):
     return json(jsonapi.error(exception, 'Resource not found'), status=HTTPStatus.NOT_FOUND)
 
 
