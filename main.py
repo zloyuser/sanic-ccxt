@@ -13,7 +13,7 @@ from sanic_openapi3 import blueprint as openapi_blueprint
 # Command line parser options & setup default values
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='Setup host ip to listen up, default to 0.0.0.0', default='0.0.0.0')
-parser.add_argument('--port', help='Setup port to attach, default to 80', default='80')
+parser.add_argument('--port', help='Setup port to attach, default to 80', default='8080')
 parser.add_argument('--workers', help='Setup workers to run, default to 1', type=int, default=1)
 parser.add_argument('--debug', help='Enable or disable debugging', action='store_true')
 parser.add_argument('--accesslog', help='Enable or disable access log', action='store_true')

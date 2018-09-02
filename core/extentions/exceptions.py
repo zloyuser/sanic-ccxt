@@ -1,5 +1,4 @@
 from http import HTTPStatus
-
 from ccxt import ExchangeError, OrderNotFound, InvalidOrder
 from sanic import Blueprint
 from sanic.exceptions import NotFound

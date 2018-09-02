@@ -3,7 +3,7 @@ def error(exception: Exception, title: str):
         'errors': [
             {
                 'title': title,
-                'detail': str(exception)
+                'detail': str(exception),
             }
         ]
     }
