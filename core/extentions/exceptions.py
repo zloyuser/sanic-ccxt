@@ -34,6 +34,11 @@ def handle_invalid_order(request, exception):
     return json(jsonapi.error(exception, 'Invalid Order'), status=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
+@blueprint.exception(MinOrderAmount)
+def handle_invalid_order(request, exception):
+    return json(jsonapi.error(exception, 'Min Order Amount'), status=HTTPStatus.NOT_ACCEPTABLE)
+
+
 @blueprint.exception(ExchangeError)
 def handle_exchange_error(request, exception):
     return json(jsonapi.error(exception, 'Exchange Error'), status=HTTPStatus.UNPROCESSABLE_ENTITY)

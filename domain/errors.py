@@ -12,3 +12,7 @@ class InvalidSymbol(DomainError):
 
 class InvalidOperation(DomainError):
     pass
+
+
+class MinOrderAmount(DomainError):
+    pass
