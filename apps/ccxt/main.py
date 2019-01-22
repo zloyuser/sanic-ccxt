@@ -36,7 +36,7 @@ async def exchanges_list(request):
 @openapi.tag("markets")
 @openapi.response(200, [str])
 async def exchange_symbols(request, name):
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         symbols = await exchange.symbols()
@@ -51,7 +51,7 @@ async def exchange_symbols(request, name):
 @openapi.tag("markets")
 @openapi.response(200, [Currency])
 async def exchange_currencies(request, name):
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         currencies = await exchange.currencies()
@@ -66,7 +66,7 @@ async def exchange_currencies(request, name):
 @openapi.tag("markets")
 @openapi.response(200, [Market])
 async def exchange_markets(request, name):
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         markets = await exchange.markets()
@@ -81,7 +81,7 @@ async def exchange_markets(request, name):
 @openapi.tag("markets")
 @openapi.response(200, Market)
 async def exchange_market(request, name, base, quote):
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         market = await exchange.market(Symbol(base, quote))
@@ -96,7 +96,7 @@ async def exchange_market(request, name, base, quote):
 @openapi.tag("tickers")
 @openapi.response(200, Ticker)
 async def exchange_ticker(request, name, base, quote):
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         ticker = await exchange.ticker(Symbol(base, quote))
@@ -118,7 +118,7 @@ async def exchange_ohlcv(request, name, base, quote):
     since = request.args.get("since", None)
     limit = request.args.get("limit", None)
 
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe, since, limit)
@@ -138,7 +138,7 @@ async def exchange_trades(request, name, base, quote):
     since = request.args.get("since", None)
     limit = request.args.get("limit", None)
 
-    exchange = ExchangeFactory.load(name)
+    exchange = await ExchangeFactory.load(name)
 
     try:
         trades = await exchange.trades(Symbol(base, quote), since, limit)
@@ -153,7 +153,7 @@ async def exchange_trades(request, name, base, quote):
 @openapi.summary("Fetches authorized account balances")
 @openapi.response(200, [Wallet])
 async def exchange_wallet(request, name):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     try:
         wallet = await exchange.wallet()
@@ -168,7 +168,7 @@ async def exchange_wallet(request, name):
 @openapi.summary("Fetches authorized account balance")
 @openapi.response(200, [Balance])
 async def exchange_wallet(request, name, base):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     try:
         balance = await exchange.balance(base)
@@ -184,7 +184,7 @@ async def exchange_wallet(request, name, base):
 @openapi.parameter("limit", int)
 @openapi.response(200, [Order])
 async def orders_list(request, name, base, quote):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     since = request.args.get("since", None)
     limit = request.args.get("limit", None)
@@ -204,7 +204,7 @@ async def orders_list(request, name, base, quote):
 @openapi.response(200, desc="Order object")
 @openapi.response(404, desc="Order not found")
 async def orders_get(request, name, base, quote, id):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     try:
         order = await exchange.get_order(Symbol(base, quote), id)
@@ -219,7 +219,7 @@ async def orders_get(request, name, base, quote, id):
 @openapi.tag("orders")
 @openapi.response(201, desc="Order created")
 async def orders_place(request, name, base, quote):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     payload = request.json
 
@@ -242,7 +242,7 @@ async def orders_place(request, name, base, quote):
 @openapi.response(204, desc="Order removed")
 @openapi.response(404, desc="Order not found")
 async def orders_cancel(request, name, base, quote, id):
-    exchange = ExchangeFactory.load(name, ccxt_headers(request))
+    exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     try:
         await exchange.cancel_order(Symbol(base, quote), id)

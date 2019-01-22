@@ -5,7 +5,8 @@ from core.extentions.middlewares import blueprint as ext_middlewares
 
 from apps.ccxt import blueprint as ping_app
 
-def build_full_app(settings={}):
+
+def build_full_app(settings=None):
     """Build Sanic Full App
 
     Mirroring main.py

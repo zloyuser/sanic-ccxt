@@ -62,8 +62,8 @@ class Currency:
     code = str
     precision = int
 
-    def __init__(self, id: str, code: str, precision: int):
-        self.id = id
+    def __init__(self, _id: str, code: str, precision: int):
+        self.id = _id
         self.code = code
         self.precision = precision
 

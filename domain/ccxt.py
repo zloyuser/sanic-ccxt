@@ -3,22 +3,10 @@ from collections import defaultdict
 
 from ccxt import RequestTimeout, OrderNotFound, InvalidOrder
 from ccxt.async_support.base.exchange import Exchange
+
+from domain.limits import Limits
 from domain.models import *
 from domain.errors import InvalidSymbol, InvalidOperation, MinOrderAmount
-
-
-class Limits:
-    values: defaultdict(float)
-
-    def __init__(self):
-        self.values = defaultdict(float)
-        self.values.update({
-            'poloniex': 1.0,
-            'binance': 10.0
-        })
-
-    def by_exchange(self, exchange: Exchange) -> float:
-        return self.values[exchange.id]
 
 
 class CCXTProxy(ExchangeProxy):
@@ -26,12 +14,12 @@ class CCXTProxy(ExchangeProxy):
     retries: {}
     limits: Limits
 
-    def __init__(self, name: str, exchange: Exchange):
+    def __init__(self, name: str, exchange: Exchange, limits: Limits):
         super().__init__(name)
 
         self.exchange = exchange
         self.retries = defaultdict(int)
-        self.limits = Limits()
+        self.limits = limits
 
     def features(self) -> Dict:
         return self.exchange.has
@@ -149,7 +137,7 @@ class CCXTProxy(ExchangeProxy):
 
             raise error
         except InvalidOrder as error:
-            limit = self.limits.by_exchange(self.exchange)
+            limit = self.limits.fetch(self.exchange)
 
             if limit >= amount * price:
                 raise MinOrderAmount(str(error))

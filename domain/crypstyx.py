@@ -1,4 +1,8 @@
-import aiohttp, json, hmac, hashlib, urllib, base64
+import aiohttp
+import base64
+import hashlib
+import hmac
+import json
 
 from datetime import datetime
 from domain.errors import InvalidSymbol
@@ -21,7 +25,8 @@ class CrypstyxSecurity:
         request_md5 = CrypstyxSecurity.md5(data)
         request_base64 = base64.b64encode(request_md5)
 
-        signature = self._key + method.upper() + url.lower() + str(timestamp) + str(self._nonce) + request_base64.decode()
+        signature = self._key + method.upper() + url.lower() + str(timestamp)
+        signature += str(self._nonce) + request_base64.decode()
         signature_hmac = hmac.new(base64.b64decode(self._secret), signature.encode(), hashlib.sha256).digest()
 
         hmac_signature = base64.b64encode(signature_hmac).decode()

@@ -1,3 +1,4 @@
+aiomysql
 ccxt
 sanic
 sanic_openapi3
