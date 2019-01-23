@@ -24,7 +24,7 @@ class LimitsSource(object):
         values = {}
 
         try:
-            dsn = environ.get('SANIC_LIMITS_DSN')
+            dsn = environ.get('CCXT_LIMITS_DSN')
             parts = urlparse(dsn)
 
             conn = await aiomysql.connect(
@@ -37,13 +37,13 @@ class LimitsSource(object):
             )
 
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT Exchange, MirOrderAmount FROM ExchangeSettings")
+                await cur.execute("SELECT Exchange, MinOrderAmount FROM ExchangeSettings")
 
                 results = await cur.fetchall()
 
                 for item in results:
                     values.update({
-                        item['Exchange']: float(item['MirOrderAmount']),
+                        item['Exchange']: float(item['MinOrderAmount']),
                     })
 
             conn.close()
