@@ -148,6 +148,24 @@ async def exchange_trades(request, name, base, quote):
         await exchange.close()
 
 
+@blueprint.get("/<name:[A-z]+>/book/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Fetch L2/L3 order book for a particular market trading symbol.")
+@openapi.tag("trades")
+@openapi.parameter("limit", int)
+@openapi.response(200, [Order])
+async def orders_list(request, name, base, quote):
+    exchange = await ExchangeFactory.load(name)
+
+    limit = request.args.get("limit", None)
+
+    try:
+        orders = await exchange.get_book(Symbol(base, quote), limit)
+
+        return json(orders)
+    finally:
+        await exchange.close()
+
+
 @blueprint.get("/<name:[A-z]+>/wallet/")
 @openapi.tag("account")
 @openapi.summary("Fetches authorized account balances")
@@ -179,9 +197,11 @@ async def exchange_wallet(request, name, base):
 
 
 @blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
-@openapi.summary("Fetch L2/L3 order book for a particular market trading symbol.")
+@openapi.summary("Fetch account orders for a particular market trading symbol.")
 @openapi.tag("orders")
+@openapi.parameter("since", int)
 @openapi.parameter("limit", int)
+@openapi.parameter("status", str)
 @openapi.response(200, [Order])
 async def orders_list(request, name, base, quote):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
