@@ -80,12 +80,16 @@ class CCXTProxy(ExchangeProxy):
 
         return await self.exchange.fetch_trades(str(symbol), since, limit)
 
-    async def get_book(self, symbol: Symbol, limit: int = None):
+    async def book(self, symbol: Symbol, limit: int = None):
         self._guard("fetchOrderBook")
 
         limit = int(limit) if limit else None
+        items = await self.exchange.fetch_order_book(str(symbol), limit)
 
-        return await self.exchange.fetch_order_book(str(symbol), limit)
+        bids = [Offer.map(v) for v in items['bids']]
+        asks = [Offer.map(v) for v in items['asks']]
+
+        return OrderBook(bids, asks)
 
     async def wallet(self) -> Wallet:
         self._guard("fetchBalance")

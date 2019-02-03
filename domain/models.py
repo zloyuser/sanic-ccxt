@@ -17,27 +17,6 @@ class Symbol:
         return str(self)
 
 
-class Wallet:
-    free: Dict[str, float]
-    used: Dict[str, float]
-    total: Dict[str, float]
-
-    def __init__(self, free: Dict, used: Dict, total: Dict):
-        self.free = free
-        self.used = used
-        self.total = total
-
-
-class Balance:
-    free: float
-    used: float
-    total: float
-
-    def __init__(self, values: Dict):
-        for k, v in values.items():
-            setattr(self, k, v or 0)
-
-
 class ExchangeFeatures:
     fetchClosedOrders: bool
     fetchCurrencies: bool
@@ -58,14 +37,119 @@ class ExchangeFeatures:
 
 
 class Currency:
-    id = str
-    code = str
-    precision = int
+    id: str
+    code: str
+    precision: int
 
     def __init__(self, _id: str, code: str, precision: int):
         self.id = _id
         self.code = code
         self.precision = precision
+
+
+class Limit:
+    min: float
+    max: float
+
+
+class MarketPrecision:
+    price: int
+    amount: int
+    cost: int
+
+
+class MarketLimits:
+    price: Limit
+    amount: Limit
+    cost: Limit
+
+
+class Market:
+    id: str
+    symbol: str
+    base: str
+    quote: str
+    active: bool
+    precision: MarketPrecision
+    limits: MarketLimits
+
+
+class Ticker:
+    symbol: str
+    timestamp: int
+    bid: float
+    bidVolume: float
+    ask: float
+    askVolume: float
+    baseVolume: float
+    quoteVolume: float
+
+
+class OHLCV:
+    t: int
+    o: float
+    h: float
+    l: float
+    c: float
+    v: float
+
+    @staticmethod
+    def map(v: list) -> dict:
+        k = ['t', 'o', 'h', 'l', 'c', 'v']
+
+        return dict(zip(k, v))
+
+
+class TradeItem:
+    id: str
+    timestamp: int
+    order: str
+    type: str
+    side: str
+    price: float
+    amount: float
+
+
+class Offer:
+    price: float
+    amount: float
+
+    @staticmethod
+    def map(v: list) -> dict:
+        return {
+            'price': v[0],
+            'amount': v[1],
+        }
+
+
+class OrderBook:
+    bids: List[Offer]
+    asks: List[Offer]
+
+    def __init__(self, bids: List[Offer], asks: List[Offer]):
+        self.bids = bids
+        self.asks = asks
+
+
+class Wallet:
+    free: Dict[str, float]
+    used: Dict[str, float]
+    total: Dict[str, float]
+
+    def __init__(self, free: Dict, used: Dict, total: Dict):
+        self.free = free
+        self.used = used
+        self.total = total
+
+
+class Balance:
+    free: float
+    used: float
+    total: float
+
+    def __init__(self, values: Dict):
+        for k, v in values.items():
+            setattr(self, k, v or 0)
 
 
 class OrderFee:
@@ -97,7 +181,7 @@ class ExchangeProxy:
         self.name = name
 
     @abstractmethod
-    def features(self) -> Dict:
+    def features(self) -> ExchangeFeatures:
         pass
 
     @abstractmethod
@@ -109,23 +193,27 @@ class ExchangeProxy:
         pass
 
     @abstractmethod
-    async def markets(self):
+    async def markets(self) -> List[Market]:
         pass
 
     @abstractmethod
-    async def market(self, symbol: Symbol):
+    async def market(self, symbol: Symbol) -> Market:
         pass
 
     @abstractmethod
-    async def ticker(self, symbol: Symbol):
+    async def ticker(self, symbol: Symbol) -> Ticker:
         pass
 
     @abstractmethod
-    async def ohlcv(self, symbol: Symbol, timeframe: str = '1m', since: int = None, limit: int = None) -> List[dict]:
+    async def ohlcv(self, symbol: Symbol, timeframe: str = '1m', since: int = None, limit: int = None) -> List[OHLCV]:
         pass
 
     @abstractmethod
-    async def trades(self, symbol: Symbol, since: int = None, limit: int = None):
+    async def trades(self, symbol: Symbol, since: int = None, limit: int = None) -> List[TradeItem]:
+        pass
+
+    @abstractmethod
+    async def book(self, symbol: Symbol, limit: int = None) -> OrderBook:
         pass
 
     @abstractmethod
@@ -137,7 +225,7 @@ class ExchangeProxy:
         pass
 
     @abstractmethod
-    async def get_orders(self, symbol: Symbol, status: str = None, since: int = None, limit: int = None):
+    async def get_orders(self, symbol: Symbol, status: str = None, since: int = None, limit: int = None) -> List[Order]:
         pass
 
     @abstractmethod
@@ -155,66 +243,3 @@ class ExchangeProxy:
     @abstractmethod
     async def close(self):
         pass
-
-
-class Limit:
-    min = float
-    max = float
-
-
-class MarketPrecision:
-    price = int
-    amount = int
-    cost = int
-
-
-class MarketLimits:
-    price = Limit
-    amount = Limit
-    cost = Limit
-
-
-class Market:
-    id = str
-    symbol = str
-    base = str
-    quote = str
-    active = bool
-    precision = MarketPrecision
-    limits = MarketLimits
-
-
-class OHLCV:
-    t = int
-    o = float
-    h = float
-    l = float
-    c = float
-    v = float
-
-    @staticmethod
-    def map(v: list) -> dict:
-        k = ['t', 'o', 'h', 'l', 'c', 'v']
-
-        return dict(zip(k, v))
-
-
-class Trade:
-    id = str
-    timestamp = int
-    order = str
-    type = str
-    side = str
-    price = float
-    amount = float
-
-
-class Ticker:
-    symbol = str
-    timestamp = int
-    bid = float
-    bidVolume = float
-    ask = float
-    askVolume = float
-    baseVolume = float
-    quoteVolume = float

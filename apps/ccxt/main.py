@@ -21,7 +21,7 @@ def ccxt_headers(request: Request):
 @blueprint.get("/")
 @openapi.summary("Fetches an exchanges list")
 @openapi.tag("info")
-@openapi.response(200, [ExchangeFeatures])
+@openapi.response(200, Dict[str, ExchangeFeatures])
 async def exchanges_list(request):
     exchanges = {}
 
@@ -34,7 +34,7 @@ async def exchanges_list(request):
 @blueprint.get("/<name:[A-z]+>/symbols")
 @openapi.summary("Fetches a exchange symbols list")
 @openapi.tag("markets")
-@openapi.response(200, [str])
+@openapi.response(200, List[str])
 async def exchange_symbols(request, name):
     exchange = await ExchangeFactory.load(name)
 
@@ -49,7 +49,7 @@ async def exchange_symbols(request, name):
 @blueprint.get("/<name:[A-z]+>/currencies")
 @openapi.summary("Fetches a exchange currencies list")
 @openapi.tag("markets")
-@openapi.response(200, [Currency])
+@openapi.response(200, List[Currency])
 async def exchange_currencies(request, name):
     exchange = await ExchangeFactory.load(name)
 
@@ -64,7 +64,7 @@ async def exchange_currencies(request, name):
 @blueprint.get("/<name:[A-z]+>/markets")
 @openapi.summary("Load exchange markets list")
 @openapi.tag("markets")
-@openapi.response(200, [Market])
+@openapi.response(200, List[Market])
 async def exchange_markets(request, name):
     exchange = await ExchangeFactory.load(name)
 
@@ -112,7 +112,7 @@ async def exchange_ticker(request, name, base, quote):
 @openapi.parameter("timeframe", str)
 @openapi.parameter("since", int)
 @openapi.parameter("limit", int)
-@openapi.response(200, [OHLCV])
+@openapi.response(200, List[OHLCV])
 async def exchange_ohlcv(request, name, base, quote):
     timeframe = request.args.get("timeframe", None)
     since = request.args.get("since", None)
@@ -133,7 +133,7 @@ async def exchange_ohlcv(request, name, base, quote):
 @openapi.tag("trades")
 @openapi.parameter("since", int)
 @openapi.parameter("limit", int)
-@openapi.response(200, [Trade])
+@openapi.response(200, List[TradeItem])
 async def exchange_trades(request, name, base, quote):
     since = request.args.get("since", None)
     limit = request.args.get("limit", None)
@@ -152,14 +152,14 @@ async def exchange_trades(request, name, base, quote):
 @openapi.summary("Fetch L2/L3 order book for a particular market trading symbol.")
 @openapi.tag("trades")
 @openapi.parameter("limit", int)
-@openapi.response(200, [Order])
+@openapi.response(200, OrderBook)
 async def orders_list(request, name, base, quote):
     exchange = await ExchangeFactory.load(name)
 
     limit = request.args.get("limit", None)
 
     try:
-        orders = await exchange.get_book(Symbol(base, quote), limit)
+        orders = await exchange.book(Symbol(base, quote), limit)
 
         return json(orders)
     finally:
@@ -169,7 +169,7 @@ async def orders_list(request, name, base, quote):
 @blueprint.get("/<name:[A-z]+>/wallet/")
 @openapi.tag("account")
 @openapi.summary("Fetches authorized account balances")
-@openapi.response(200, [Wallet])
+@openapi.response(200, Wallet)
 async def exchange_wallet(request, name):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
@@ -184,7 +184,7 @@ async def exchange_wallet(request, name):
 @blueprint.get("/<name:[A-z]+>/wallet/<base:[A-z]+>")
 @openapi.tag("account")
 @openapi.summary("Fetches authorized account balance")
-@openapi.response(200, [Balance])
+@openapi.response(200, Balance)
 async def exchange_wallet(request, name, base):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
@@ -202,7 +202,7 @@ async def exchange_wallet(request, name, base):
 @openapi.parameter("since", int)
 @openapi.parameter("limit", int)
 @openapi.parameter("status", str)
-@openapi.response(200, [Order])
+@openapi.response(200, List[Order])
 async def orders_list(request, name, base, quote):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
@@ -221,7 +221,7 @@ async def orders_list(request, name, base, quote):
 @blueprint.get("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>/<id>")
 @openapi.summary("Get order with specified ID.")
 @openapi.tag("orders")
-@openapi.response(200, desc="Order object")
+@openapi.response(200, Order, desc="Order object")
 @openapi.response(404, desc="Order not found")
 async def orders_get(request, name, base, quote, id):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
@@ -237,7 +237,8 @@ async def orders_get(request, name, base, quote, id):
 @blueprint.post("/<name:[A-z]+>/orders/<base:[A-z]+>/<quote:[A-z]+>")
 @openapi.summary("Place order to exchange with given data.")
 @openapi.tag("orders")
-@openapi.response(201, desc="Order created")
+@openapi.response(201, Order, desc="Order created")
+@openapi.response(406, desc="Min order amount not reached")
 async def orders_place(request, name, base, quote):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
