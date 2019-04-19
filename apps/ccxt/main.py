@@ -101,7 +101,7 @@ async def exchange_tickers(request, name):
     try:
         tickers = await exchange.tickers()
 
-        return json(tickers)
+        return json(tickers.values())
     finally:
         await exchange.close()
 
