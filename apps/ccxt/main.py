@@ -91,6 +91,21 @@ async def exchange_market(request, name, base, quote):
         await exchange.close()
 
 
+@blueprint.get("/<name:[A-z]+>/tickers")
+@openapi.summary("Fetch price tickers for all symbols")
+@openapi.tag("tickers")
+@openapi.response(200, List[Ticker])
+async def exchange_tickers(request, name):
+    exchange = await ExchangeFactory.load(name)
+
+    try:
+        tickers = await exchange.tickers()
+
+        return json(tickers)
+    finally:
+        await exchange.close()
+
+
 @blueprint.get("/<name:[A-z]+>/tickers/<base:[A-z]+>/<quote:[A-z]+>")
 @openapi.summary("Fetch price tickers for a particular market/symbol")
 @openapi.tag("tickers")
@@ -153,15 +168,15 @@ async def exchange_trades(request, name, base, quote):
 @openapi.tag("trades")
 @openapi.parameter("limit", int)
 @openapi.response(200, OrderBook)
-async def orders_list(request, name, base, quote):
+async def exchange_book(request, name, base, quote):
     exchange = await ExchangeFactory.load(name)
 
     limit = request.args.get("limit", None)
 
     try:
-        orders = await exchange.book(Symbol(base, quote), limit)
+        book = await exchange.book(Symbol(base, quote), limit)
 
-        return json(orders)
+        return json(book)
     finally:
         await exchange.close()
 
@@ -170,7 +185,7 @@ async def orders_list(request, name, base, quote):
 @openapi.tag("account")
 @openapi.summary("Fetches authorized account balances")
 @openapi.response(200, Wallet)
-async def exchange_wallet(request, name):
+async def exchange_wallets(request, name):
     exchange = await ExchangeFactory.load(name, ccxt_headers(request))
 
     try:

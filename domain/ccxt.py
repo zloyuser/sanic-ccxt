@@ -51,6 +51,11 @@ class CCXTProxy(ExchangeProxy):
 
         return self.exchange.markets[symbol]
 
+    async def tickers(self):
+        self._guard("fetchTickers")
+
+        return await self.exchange.fetch_tickers()
+
     async def ticker(self, symbol: Symbol):
         self._guard("fetchTicker")
 
