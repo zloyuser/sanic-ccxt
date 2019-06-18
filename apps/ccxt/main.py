@@ -1,3 +1,5 @@
+import talib as ta
+import numpy as np
 from sanic.request import Request
 from sanic.response import json
 from sanic import Blueprint
@@ -177,6 +179,38 @@ async def exchange_book(request, name, base, quote):
         book = await exchange.book(Symbol(base, quote), limit)
 
         return json(book)
+    finally:
+        await exchange.close()
+
+
+@blueprint.get("/<name:[A-z]+>/indicators/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Fetches indicators data for symbol")
+@openapi.tag("indicators")
+@openapi.parameter("timeframe", str)
+@openapi.parameter("fastPeriod", int)
+@openapi.parameter("slowPeriod", int)
+@openapi.parameter("signalPeriod", int)
+@openapi.response(200, Dict[str, float])
+async def exchange_ohlcv(request, name, base, quote):
+    timeframe = request.args.get("timeframe", "15m")
+    fastPeriod = request.args.get("fastPeriod", 12)
+    slowPeriod = request.args.get("slowPeriod", 26)
+    signalPeriod = request.args.get("signalPeriod", 9)
+
+    exchange = await ExchangeFactory.load(name)
+
+    try:
+        ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe)
+        close = [float(v['c']) for v in ohlcv]
+        prices = np.array(close)
+
+        macd, sig, hist = ta.MACD(prices, fastperiod=fastPeriod, slowperiod=slowPeriod, signalperiod=signalPeriod)
+
+        return json({
+            'hist': hist[-1],
+            'macd': macd[-1],
+            'sig': sig[-1],
+        })
     finally:
         await exchange.close()
 
