@@ -1,9 +1,9 @@
-import talib as ta
-import numpy as np
 from sanic.request import Request
 from sanic.response import json
 from sanic import Blueprint
 from sanic_openapi3 import openapi
+
+from domain.indicators import Indicators
 from domain.models import *
 from domain.factory import ExchangeFactory
 
@@ -183,38 +183,52 @@ async def exchange_book(request, name, base, quote):
         await exchange.close()
 
 
-@blueprint.get("/<name:[A-z]+>/indicators/<base:[A-z]+>/<quote:[A-z]+>")
-@openapi.summary("Fetches indicators data for symbol")
+@blueprint.get("/<name:[A-z]+>/indicators/macd/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Fetches MACD indicators for symbol")
 @openapi.tag("indicators")
 @openapi.parameter("timeframe", str)
-@openapi.parameter("fastPeriod", int)
-@openapi.parameter("slowPeriod", int)
-@openapi.parameter("signalPeriod", int)
-@openapi.response(200, Dict[str, float])
-async def exchange_ohlcv(request, name, base, quote):
-    timeframe = request.args.get("timeframe", "15m")
-    fastPeriod = request.args.get("fastPeriod", 12)
-    slowPeriod = request.args.get("slowPeriod", 26)
-    signalPeriod = request.args.get("signalPeriod", 9)
+@openapi.parameter("count", int)
+@openapi.parameter("fast", int)
+@openapi.parameter("slow", int)
+@openapi.parameter("signal", int)
+@openapi.response(200, MACD)
+async def exchange_indicators_macd(request, name, base, quote):
+    timeframe = request.args.get("timeframe", "5m")
+    count = request.args.get("count", None)
+
+    fast = request.args.get("fast", 12)
+    slow = request.args.get("slow", 26)
+    signal = request.args.get("signal", 9)
 
     exchange = await ExchangeFactory.load(name)
+    indicators = Indicators(exchange, Symbol(base, quote), timeframe)
+    value = await indicators.macd(fast, slow, signal)
 
     try:
-        ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe)
-        close = np.array([float(v['c']) for v in ohlcv])
-        volume = np.array([float(v['c']) for v in ohlcv])
+        return json(value.slice(int(count)) if count else value)
+    finally:
+        await exchange.close()
 
-        macd, sig, hist = ta.MACD(close, fastperiod=fastPeriod, slowperiod=slowPeriod, signalperiod=signalPeriod)
-        rsi = ta.RSI(close, timeperiod=14)
-        obv = ta.OBV(close, volume)
 
-        return json({
-            'hist': hist[-1],
-            'macd': macd[-1],
-            'sig': sig[-1],
-            'rsi': rsi[-1],
-            'obv': obv[-1],
-        })
+@blueprint.get("/<name:[A-z]+>/indicators/rsi/<base:[A-z]+>/<quote:[A-z]+>")
+@openapi.summary("Fetches RSI indicators for symbol")
+@openapi.tag("indicators")
+@openapi.parameter("timeframe", str)
+@openapi.parameter("count", int)
+@openapi.parameter("period", int)
+@openapi.response(200, RSI)
+async def exchange_indicators_rsi(request, name, base, quote):
+    timeframe = request.args.get("timeframe", "5m")
+    count = request.args.get("count", None)
+
+    period = request.args.get("period", 14)
+
+    exchange = await ExchangeFactory.load(name)
+    indicators = Indicators(exchange, Symbol(base, quote), timeframe)
+    value = await indicators.rsi(period)
+
+    try:
+        return json(value.slice(int(count)) if count else value)
     finally:
         await exchange.close()
 

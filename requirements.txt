@@ -1,4 +1,4 @@
-aiomysql
+numpy
 ccxt
 sanic
 sanic_openapi3

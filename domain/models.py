@@ -93,11 +93,13 @@ class OHLCV:
     c: float
     v: float
 
-    @staticmethod
-    def map(v: list) -> dict:
-        k = ['t', 'o', 'h', 'l', 'c', 'v']
-
-        return dict(zip(k, v))
+    def __init__(self, v: List):
+        self.t = v[0]
+        self.o = v[1]
+        self.h = v[2]
+        self.l = v[3]
+        self.c = v[4]
+        self.v = v[5]
 
 
 class TradeItem:
@@ -243,3 +245,27 @@ class ExchangeProxy:
     @abstractmethod
     async def close(self):
         pass
+
+
+class MACD:
+    macd: List[float]
+    sig: List[float]
+    hist: List[float]
+
+    def __init__(self, macd: List[float], sig: List[float], hist: List[float]):
+        self.macd = macd
+        self.sig = sig
+        self.hist = hist
+    #
+    # def slice(self, count: int):
+    #     return MACD(self.macd[-count:], self.sig[-count:], self.hist[-count:])
+
+
+class RSI:
+    rsi: List[float]
+
+    def __init__(self, rsi: List[float]):
+        self.rsi = rsi
+    #
+    # def slice(self, count: int):
+    #     return RSI(self.rsi[-count:])

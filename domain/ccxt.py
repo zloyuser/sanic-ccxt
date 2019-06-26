@@ -4,22 +4,19 @@ from collections import defaultdict
 from ccxt import RequestTimeout, OrderNotFound, InvalidOrder
 from ccxt.async_support.base.exchange import Exchange
 
-from domain.limits import Limits
 from domain.models import *
-from domain.errors import InvalidSymbol, InvalidOperation, MinOrderAmount
+from domain.errors import InvalidSymbol, InvalidOperation
 
 
 class CCXTProxy(ExchangeProxy):
     exchange: Exchange
     retries: {}
-    limits: Limits
 
-    def __init__(self, name: str, exchange: Exchange, limits: Limits):
+    def __init__(self, name: str, exchange: Exchange):
         super().__init__(name)
 
         self.exchange = exchange
         self.retries = defaultdict(int)
-        self.limits = limits
 
     def features(self) -> Dict:
         return self.exchange.has
@@ -61,7 +58,7 @@ class CCXTProxy(ExchangeProxy):
 
         return await self.exchange.fetch_ticker(str(symbol))
 
-    async def ohlcv(self, symbol: Symbol, timeframe: str = '1m', since: int = None, limit: int = None) -> List[dict]:
+    async def ohlcv(self, symbol: Symbol, timeframe: str = '1m', since: int = None, limit: int = None) -> List[OHLCV]:
         self._guard("fetchOHLCV")
 
         if not hasattr(self.exchange, 'timeframes'):
@@ -75,7 +72,7 @@ class CCXTProxy(ExchangeProxy):
 
         ohlcv = await self.exchange.fetch_ohlcv(str(symbol), timeframe, since, limit)
 
-        return [OHLCV.map(v) for v in ohlcv]
+        return [OHLCV(v) for v in ohlcv]
 
     async def trades(self, symbol: Symbol, since: int = None, limit: int = None):
         self._guard("fetchTrades")
@@ -153,11 +150,7 @@ class CCXTProxy(ExchangeProxy):
 
             raise error
         except InvalidOrder as error:
-            limit = self.limits.fetch(self.exchange)
-
-            if limit >= amount * price:
-                raise MinOrderAmount(str(error))
-
+            # TODO !!!
             raise error
 
     async def cancel_order(self, symbol: Symbol, _id: str):
@@ -184,7 +177,7 @@ class CCXTProxy(ExchangeProxy):
 
                 raise error
             else:
-                self.cancel_order(symbol, _id)
+                await self.cancel_order(symbol, _id)
 
     async def close(self):
         return await self.exchange.close()
