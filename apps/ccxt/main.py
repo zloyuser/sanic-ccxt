@@ -201,8 +201,8 @@ async def exchange_ohlcv(request, name, base, quote):
 
     try:
         ohlcv = await exchange.ohlcv(Symbol(base, quote), timeframe)
-        close = np.array([float(v['c']) for v in ohlcv])
-        volume = np.array([float(v['c']) for v in ohlcv])
+        close = np.array([v['c'] for v in ohlcv], float)
+        volume = np.array([v['v'] for v in ohlcv], float)
 
         macd, sig, hist = ta.MACD(close, fastperiod=fastPeriod, slowperiod=slowPeriod, signalperiod=signalPeriod)
         rsi = ta.RSI(close, timeperiod=14)
