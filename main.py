@@ -7,6 +7,7 @@ from core.extentions.exceptions import blueprint as ext_exceptions
 from settings import Settings
 
 from apps.ccxt import blueprint as ccxt_app
+from apps.ta import blueprint as ta_app
 from apps.redoc import blueprint as redoc_app
 from sanic_openapi3 import blueprint as openapi_blueprint
 
@@ -29,6 +30,7 @@ app.blueprint(ext_exceptions)
 
 # Install apps
 app.blueprint(ccxt_app)
+app.blueprint(ta_app)
 app.blueprint(redoc_app)
 app.blueprint(openapi_blueprint)
 

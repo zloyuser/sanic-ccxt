@@ -3,7 +3,7 @@ from sanic.response import json
 from sanic import Blueprint
 from sanic_openapi3 import openapi
 
-from domain.indicators import Indicators
+from domain.indicators import *
 from domain.models import *
 from domain.factory import ExchangeFactory
 
@@ -171,64 +171,14 @@ async def exchange_trades(request, name, base, quote):
 @openapi.parameter("limit", int)
 @openapi.response(200, OrderBook)
 async def exchange_book(request, name, base, quote):
-    exchange = await ExchangeFactory.load(name)
-
     limit = request.args.get("limit", None)
+
+    exchange = await ExchangeFactory.load(name)
 
     try:
         book = await exchange.book(Symbol(base, quote), limit)
 
         return json(book)
-    finally:
-        await exchange.close()
-
-
-@blueprint.get("/<name:[A-z]+>/indicators/macd/<base:[A-z]+>/<quote:[A-z]+>")
-@openapi.summary("Fetches MACD indicators for symbol")
-@openapi.tag("indicators")
-@openapi.parameter("timeframe", str)
-@openapi.parameter("count", int)
-@openapi.parameter("fast", int)
-@openapi.parameter("slow", int)
-@openapi.parameter("signal", int)
-@openapi.response(200, MACD)
-async def exchange_indicators_macd(request, name, base, quote):
-    timeframe = request.args.get("timeframe", "5m")
-    count = request.args.get("count", None)
-
-    fast = request.args.get("fast", 12)
-    slow = request.args.get("slow", 26)
-    signal = request.args.get("signal", 9)
-
-    exchange = await ExchangeFactory.load(name)
-    indicators = Indicators(exchange, Symbol(base, quote), timeframe)
-    value = await indicators.macd(fast, slow, signal)
-
-    try:
-        return json(value.slice(int(count)) if count else value)
-    finally:
-        await exchange.close()
-
-
-@blueprint.get("/<name:[A-z]+>/indicators/rsi/<base:[A-z]+>/<quote:[A-z]+>")
-@openapi.summary("Fetches RSI indicators for symbol")
-@openapi.tag("indicators")
-@openapi.parameter("timeframe", str)
-@openapi.parameter("count", int)
-@openapi.parameter("period", int)
-@openapi.response(200, RSI)
-async def exchange_indicators_rsi(request, name, base, quote):
-    timeframe = request.args.get("timeframe", "5m")
-    count = request.args.get("count", None)
-
-    period = request.args.get("period", 14)
-
-    exchange = await ExchangeFactory.load(name)
-    indicators = Indicators(exchange, Symbol(base, quote), timeframe)
-    value = await indicators.rsi(period)
-
-    try:
-        return json(value.slice(int(count)) if count else value)
     finally:
         await exchange.close()
 

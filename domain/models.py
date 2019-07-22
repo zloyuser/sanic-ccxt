@@ -245,27 +245,3 @@ class ExchangeProxy:
     @abstractmethod
     async def close(self):
         pass
-
-
-class MACD:
-    macd: List[float]
-    sig: List[float]
-    hist: List[float]
-
-    def __init__(self, macd: List[float], sig: List[float], hist: List[float]):
-        self.macd = macd
-        self.sig = sig
-        self.hist = hist
-    #
-    # def slice(self, count: int):
-    #     return MACD(self.macd[-count:], self.sig[-count:], self.hist[-count:])
-
-
-class RSI:
-    rsi: List[float]
-
-    def __init__(self, rsi: List[float]):
-        self.rsi = rsi
-    #
-    # def slice(self, count: int):
-    #     return RSI(self.rsi[-count:])
