@@ -205,14 +205,17 @@ async def exchange_ohlcv(request, name, base, quote):
         volume = np.array([v['v'] for v in ohlcv], float)
 
         macd, sig, hist = ta.MACD(close, fastperiod=fastPeriod, slowperiod=slowPeriod, signalperiod=signalPeriod)
-        rsi = ta.RSI(close, timeperiod=14)
         obv = ta.OBV(close, volume)
+
+        rsi = ta.RSI(close, timeperiod=14)
+        rsf = ta.RSI(close, timeperiod=5)
 
         return json({
             'hist': hist[-1],
             'macd': macd[-1],
             'sig': sig[-1],
             'rsi': rsi[-1],
+            'rsf': rsf[-1],
             'obv': obv[-1],
         })
     finally:
